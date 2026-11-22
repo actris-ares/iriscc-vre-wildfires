@@ -1,0 +1,18 @@
+# Each notebook installs the packages it is missing when it starts; installing them in
+# advance only saves that wait. Python 3 with JupyterLab.
+jupyterlab>=4.0
+ipywidgets>=8.1
+numpy
+pandas>=2.0
+xarray>=2023.1
+netCDF4>=1.6
+cftime
+matplotlib>=3.7
+plotly>=5.18
+requests>=2.31
+tqdm
+threddsclient
+ebas-plot
+icoscp_core
+python-keycloak
+cryptography

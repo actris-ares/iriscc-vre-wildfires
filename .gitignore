@@ -1,0 +1,15 @@
+# Produced by running the notebooks: every run empties and refills these.
+data/
+exports/
+downloads/
+outputs/
+*.nc
+*.zip
+# A kernel crash leaves a core dump: process memory, possibly with tokens in it.
+core
+core.*
+.ipynb_checkpoints/
+__pycache__/
+.DS_Store
+Untitled*.ipynb
+.env

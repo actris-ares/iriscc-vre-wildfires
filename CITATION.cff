@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+message: "If you use these notebooks, please cite them as below."
+title: "IRISCC VRE — Wildfires in Europe: Jupyter notebooks for ACTRIS, IAGOS, ICOS and FLEXPART data"
+type: software
+version: "1.0.0"
+license: GPL-3.0-only
+repository-code: "https://github.com/actris-ares/iriscc-vre-wildfires"
+abstract: >-
+  Jupyter notebooks that follow a wildfire episode - the 2025 Canadian fire season and the
+  transport of its smoke to Europe - across the ACTRIS, IAGOS and ICOS research
+  infrastructures, together with FLEXPART model output. Built for Demonstrator 6 of the
+  Horizon Europe project IRISCC and run on the D4Science virtual research environment
+  "Wildfires in Europe".
+keywords:
+  - wildfires
+  - aerosol
+  - lidar
+  - aerosol typing
+  - ACTRIS
+  - IAGOS
+  - ICOS
+  - FLEXPART
+  - IRISCC
+  - virtual research environment
+  - Jupyter
+authors:
+  - given-names: Ermann
+    family-names: Ripepi
+    affiliation: "Consiglio Nazionale delle Ricerche (CNR), ACTRIS Data Centre ARES"
+  - given-names: Claudio
+    family-names: Dema
+    affiliation: "Consiglio Nazionale delle Ricerche (CNR)"
+  - given-names: Lucia
+    family-names: Mona
+    affiliation: "Consiglio Nazionale delle Ricerche (CNR)"
+  - given-names: Lise
+    family-names: Eder Murberg
+    affiliation: "NILU"
+  - given-names: Maria
+    family-names: Leseth Føyen
+    affiliation: "NILU"
+  - given-names: Damien
+    family-names: Boulanger
+    affiliation: "CNRS"
+  - given-names: Valérie
+    family-names: Thouret
+    affiliation: "CNRS"
+  - given-names: Zheng
+    family-names: Duan
+    affiliation: "Lund University"
+  - given-names: Alex
+    family-names: Vermeulen
+    affiliation: "Lund University"
+  - given-names: Nikolaos
+    family-names: Evangeliou
+    affiliation: "NILU"
+  - given-names: Sabine
+    family-names: Eckhardt
+    affiliation: "NILU"
