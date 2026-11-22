@@ -28,6 +28,11 @@ are named on the landing page.
 The aim throughout has been that someone who is not a Python or VRE specialist can work through any
 of them without editing code.
 
+The notebooks are also published on GitHub, in
+[actris-ares/iriscc-vre-wildfires](https://github.com/actris-ares/iriscc-vre-wildfires), under the GNU GPL v3.0. That is where to
+get them for use outside D4Science, and where *Cite this repository* gives the reference to cite
+them by.
+
 ## Why
 
 The tools of this VRE are distributed through the **shared workspace**, at
@@ -357,7 +362,8 @@ student is the one that was tested, and no one has to wonder which copy is curre
 Your own copy in your home directory is yours to change as you like; it simply stays private.
 
 If you have improved a notebook, written a new one, or produced results worth adding to the VRE,
-send them to **services@actris-ares.eu**. They are tested first and then published, which is also
+send them to **services@actris-ares.eu**, or open an issue or a pull request on
+[GitHub](https://github.com/actris-ares/iriscc-vre-wildfires). They are tested first and then published, which is also
 the moment to catch the things that break for other people but not for you — a missing dependency,
 a file left out of the copy, a path that only exists on your machine.
 
