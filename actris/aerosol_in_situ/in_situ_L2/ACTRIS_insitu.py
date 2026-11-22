@@ -285,7 +285,71 @@ DEFAULT_SELECTION = {
     "instrument": "filter absorption photometer",
     "variable": "aerosol_light_absorption_coefficient",
     "facility": "Sonnblick",
+    # The 2025 Canadian fire season, when the smoke reached Europe. A period is needed because
+    # a facility's record can span more than a decade of hourly data: plotted whole, it sent a
+    # million points to the browser (47 MB of HTML for Sonnblick) and the page crashed.
+    "start": "2025-05-01",
+    "end": "2025-09-30",
 }
+
+# The browser receives a Plotly figure as HTML with every value written out, and pages of a few
+# tens of megabytes are where it gives up. A figure larger than this is averaged over time -
+# daily, then weekly, then monthly means - until it fits. Measured on the HTML rather than on
+# the number of values, because the same values cost very different sizes as a line plot and
+# as a size-distribution heatmap.
+MAX_FIGURE_MB = 8
+
+def _overlaps(document, start, end):
+    """True unless the dataset's declared temporal extent lies entirely outside [start, end].
+
+    start or end may be None (open-ended). Undated documents cannot be ruled out, so they are
+    kept. Filtering here, on the metadata, is what keeps a short period from downloading the
+    whole record first.
+    """
+    extent = document.get("temporal_extent") or {}
+    begin, finish = extent.get("time_period_begin"), extent.get("time_period_end")
+    try:
+        d0 = np.datetime64(begin[:19]) if begin else None
+        d1 = np.datetime64(finish[:19]) if finish else None
+    except (TypeError, ValueError):
+        return True
+    return ((d0 is None or end is None or d0 <= end)
+            and (d1 is None or start is None or d1 >= start))
+
+
+def _period(state):
+    """(start, end) as datetime64 from the state, None where not set; end is inclusive of its day."""
+    start, end = state.get("start"), state.get("end")
+    start = np.datetime64(str(start)[:10]) if start else None
+    end = np.datetime64(str(end)[:10]) + np.timedelta64(1, "D") - np.timedelta64(1, "s") if end else None
+    return start, end
+
+
+def _figure_within_limits(ds, path="/tmp/concatenated_datasets.nc", max_mb=MAX_FIGURE_MB):
+    """Plot ds with ebas_plot, averaging it over time until the figure's HTML fits in max_mb.
+
+    Returns (html, note): note says what averaging was applied, or is None when none was. The
+    full-resolution data are written to path first, so the notebook's save cell keeps them
+    whatever the figure shows.
+    """
+    ds.to_netcdf(path)
+    html = ebas_plot.plot(path).to_html(full_html=False, include_plotlyjs="cdn")
+    if len(html) <= max_mb * 1e6 or "time" not in ds.dims:
+        return html, None
+    full_mb = len(html) / 1e6
+    reduced_path = path.replace(".nc", "_averaged.nc")
+    for rule, code, label in (("1D", "1d", "daily"), ("7D", "1w", "weekly"), ("30D", "1mo", "monthly")):
+        reduced = ds.resample(time=rule).mean(keep_attrs=True)
+        # ebas_plot lays a size distribution on a regular grid at the resolution the file
+        # declares; left at "1h", monthly means come back as eleven years of hourly columns.
+        reduced.attrs["ebas_resolution_code"] = code
+        reduced.to_netcdf(reduced_path)
+        html = ebas_plot.plot(reduced_path).to_html(full_html=False, include_plotlyjs="cdn")
+        if len(html) <= max_mb * 1e6:
+            break
+    return html, (f"At full resolution this figure would be {full_mb:.0f} MB, more than the "
+                  f"browser can draw: it shows {label} means instead. Choose a shorter period "
+                  f"to see every measurement.")
 
 
 def _preferred(values, wanted, fallback=None):
@@ -345,6 +409,20 @@ def create_search_widgets():
         widgets.HBox([widgets.Label("Facility:", layout=_label_layout), station_dd]),
         widgets.HBox([widgets.Label("Model:", layout=_label_layout), model_dd]),
     ])
+    def _date(value):
+        try:
+            return datetime.strptime(str(value)[:10], "%Y-%m-%d").date() if value else None
+        except ValueError:
+            return None
+
+    start_dp = widgets.DatePicker(value=_date(DEFAULT_SELECTION.get("start")),
+                                  layout=widgets.Layout(width="160px"))
+    end_dp = widgets.DatePicker(value=_date(DEFAULT_SELECTION.get("end")),
+                                layout=widgets.Layout(width="160px"))
+    _dd_rows.children = _dd_rows.children + (
+        widgets.HBox([widgets.Label("Period:", layout=_label_layout), start_dp,
+                      widgets.Label("to"), end_dp]),
+    )
     btn = widgets.Button(
         description="Confirm Selection", button_style="success", icon="check",
     )
@@ -353,15 +431,11 @@ def create_search_widgets():
     plot_output = widgets.Output()
 
     def _render_figure(output_widget, fig):
-        """Render a Plotly figure as HTML for notebook environments without Plotly MIME support."""
+        """Render a Plotly figure (or its ready-made HTML) for environments without Plotly MIME support."""
+        html = fig if isinstance(fig, str) else fig.to_html(full_html=False, include_plotlyjs="cdn")
         output_widget.outputs = ({
             "output_type": "display_data",
-            "data": {
-                "text/html": fig.to_html(
-                    full_html=False,
-                    include_plotlyjs="cdn",
-                ),
-            },
+            "data": {"text/html": html},
             "metadata": {},
         },)
 
@@ -458,7 +532,9 @@ def create_search_widgets():
         try:
             # All options must be (label, value) tuples, else ipywidgets treats every option as an opaque value.
             model_dd.options = [("", "")] + models
-            model_dd.value = ""
+            # Open on the first model, so that Confirm Selection works straight away as the
+            # notebook promises; an empty value made it ask for a model first.
+            model_dd.value = models[0][1] if models else ""
         finally:
             model_dd.observe(on_model_change, names="value")
         model_dd.disabled = len(models) == 0
@@ -479,6 +555,9 @@ def create_search_widgets():
             entry = ({"output_type": "stream", "name": stream, "text": text},)
             confirm_output.outputs = entry if reset else confirm_output.outputs + entry
 
+        # A new selection replaces the old figure even when it fails: a plot left over from the
+        # previous selection under a new error message reads as the answer to the new one.
+        plot_output.outputs = ()
         station = station_dd.value or None
         model = model_dd.value if model_dd.value and "select a facility" not in model_dd.value else None
         if not station or not model:
@@ -489,16 +568,24 @@ def create_search_widgets():
                 missing.append("Model")
             _write(f"Please select: {', '.join(missing)}\n", "stderr", reset=True)
             return
+        if start_dp.value and end_dp.value and start_dp.value > end_dp.value:
+            _write("The period ends before it starts: check the two dates.\n", "stderr", reset=True)
+            return
         _widget_state["instrument"] = instrument_dd.value
         _widget_state["variable"] = variable_dd.value
         _widget_state["station"] = station
         _widget_state["model"] = model
+        _widget_state["start"] = start_dp.value.isoformat() if start_dp.value else None
+        _widget_state["end"] = end_dp.value.isoformat() if end_dp.value else None
+        period = (f"{_widget_state['start'] or 'start of record'} to "
+                  f"{_widget_state['end'] or 'end of record'}")
         _write(
             f"Confirmed:\n"
             f"  Instrument : {_widget_state['instrument']}\n"
             f"  Variable   : {_widget_state['variable']}\n"
             f"  Station    : {_widget_state['station']}\n"
-            f"  Model      : {_widget_state['model']}\n",
+            f"  Model      : {_widget_state['model']}\n"
+            f"  Period     : {period}\n",
             reset=True,
         )
 
@@ -509,19 +596,28 @@ def create_search_widgets():
         try:
             dois = find_datasets()
             if not dois:
-                _write("No datasets found for this selection.\n", "stderr")
+                _write(f"No dataset of this model covers {period}. Try a different period or "
+                       f"model: the model list shows the years each one measured.\n", "stderr")
                 return
-            if len(dois) == 1:
-                fig = ebas_plot.plot(dois[0])
-            else:
-                datasets = load_and_concat_datasets(model, _widget_state["variable"], show_progress=False)
-                if datasets is None:
-                    _write("Datasets could not be loaded/concatenated.\n", "stderr")
+            _write(f"Found {len(dois)} dataset(s) covering the period:\n"
+                   + "\n".join(f"  {doi}" for doi in dois) + "\n")
+            # Always through the loader, also for a single dataset: plotting a DOI directly
+            # draws its whole record, whatever the period.
+            datasets = load_and_concat_datasets(model, _widget_state["variable"], show_progress=False)
+            if datasets is None:
+                _write("Datasets could not be loaded/concatenated.\n", "stderr")
+                return
+            start, end = _period(_widget_state)
+            if "time" in datasets.dims:
+                covered = (str(datasets["time"].values[0])[:10], str(datasets["time"].values[-1])[:10])
+                datasets = datasets.sel(time=slice(start, end))
+                if datasets.sizes["time"] == 0:
+                    _write(f"The datasets cover {covered[0]} to {covered[1]} but hold no "
+                           f"measurement in {period}.\n", "stderr")
                     return
-                datasets.to_netcdf("/tmp/concatenated_datasets.nc")
-                fig = ebas_plot.plot("/tmp/concatenated_datasets.nc")
-
-            _write(f"Found {len(dois)} dataset(s):\n" + "\n".join(f"  {doi}" for doi in dois) + "\n")
+            fig, note = _figure_within_limits(datasets)
+            if note:
+                _write(note + "\n")
 
             # Atomic assignment avoids display() duplication; doing it before the finally keeps "Loading..." visible through figure delivery.
             _render_figure(plot_output, fig)
@@ -566,13 +662,14 @@ def _search_docs(state=None):
     variable = s.get("variable")
     station = s.get("station")
     model = s.get("model")
+    start, end = _period(s)
 
     if not all([instrument, variable, station]):
         raise ValueError("instrument, variable and station must be set. Call confirm first.")
 
     return [
         document for document in search(PROD_API, _dataset_query(instrument, variable, station))
-        if _matches_model(document, model)
+        if _matches_model(document, model) and _overlaps(document, start, end)
     ]
 
 
