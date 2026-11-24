@@ -52,8 +52,9 @@ approves the request. You can also ask to be invited directly by writing to
 
 Members open `IRISCC_home.ipynb` from the shared folder and
 press the copy button: the notebooks need to write their downloads and exports, so they run
-from a copy in the user's own home. `VRE_home_folder_instructions.md` explains this step by
-step.
+from a copy in the user's own home. The user guide explains this step by step:
+[VRE_home_folder_instructions.md](VRE_home_folder_instructions.md), also as
+[PDF](VRE_home_folder_instructions.pdf).
 
 ### Anywhere else
 
