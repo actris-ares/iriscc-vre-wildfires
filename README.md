@@ -11,6 +11,11 @@ research environment *Wildfires in Europe*. They are written for students and re
 are not Python specialists: every choice — station, period, product — is made from menus, and
 no code needs to be edited.
 
+- Demonstrator 6 and its other wildfire services:
+  [tools.actris-ares.eu/wildfire](https://tools.actris-ares.eu/wildfire/)
+- The *Wildfires in Europe* VRE on D4Science:
+  [iriscc.d4science.org/group/wildfires_in-europe](https://iriscc.d4science.org/group/wildfires_in-europe)
+
 Maintained by the ACTRIS Data Centre unit ARES (Aerosol REmote Sensing), CNR.
 
 ## What is inside
@@ -39,7 +44,13 @@ the cases it was tried on, but it is still being tested and its interface may ch
 
 ### On D4Science
 
-Members of the *Wildfires in Europe* VRE open `IRISCC_home.ipynb` from the shared folder and
+The VRE is at
+[iriscc.d4science.org/group/wildfires_in-europe](https://iriscc.d4science.org/group/wildfires_in-europe)
+and asks for a D4Science sign-in. After signing in, request access to the VRE: a VRE manager
+approves the request. You can also ask to be invited directly by writing to
+[services@actris-ares.eu](mailto:services@actris-ares.eu).
+
+Members open `IRISCC_home.ipynb` from the shared folder and
 press the copy button: the notebooks need to write their downloads and exports, so they run
 from a copy in the user's own home. `VRE_home_folder_instructions.md` explains this step by
 step.
